@@ -100,7 +100,7 @@ public class CustomerServiceTest {
         CustomerEntity entity = createCustomerEntity(id, "Alice", "alice@example.com", true);
         when(customerRepository.findById(id)).thenReturn(Optional.of(entity));
 
-        List<AccountDTO> accounts = Arrays.asList(
+        List<AccountDTO> accounts = List.of(
                 createAccountDTO("Alice")
         );
         when(accountService.getAllAccounts()).thenReturn(accounts);
@@ -123,9 +123,7 @@ public class CustomerServiceTest {
         when(customerRepository.findById(id)).thenReturn(Optional.empty());
 
         // Act & Assert
-        BankingException exception = assertThrows(BankingException.class, () -> {
-            customerService.getCustomerById(id);
-        });
+        BankingException exception = assertThrows(BankingException.class, () -> customerService.getCustomerById(id));
         assertEquals("Customer with id 99 not found", exception.getMessage());
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
     }
@@ -199,7 +197,7 @@ public class CustomerServiceTest {
     public void testCreateCustomer_accountHolderMismatch_throws() {
         // Arrange
         CustomerDTO dto = createCustomerDTO(null, "David", "david@example.com", null);
-        List<AccountDTO> accounts = Arrays.asList(
+        List<AccountDTO> accounts = List.of(
                 createAccountDTO("DifferentName")
         );
         dto.setAccounts(accounts);

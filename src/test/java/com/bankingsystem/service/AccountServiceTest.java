@@ -86,9 +86,7 @@ public class AccountServiceTest {
         account.setAccountHolderName(null);
         account.setAccountType("SAVINGS");
 
-        BankingException exception = assertThrows(BankingException.class, () -> {
-            accountService.createAccount(account);
-        });
+        BankingException exception = assertThrows(BankingException.class, () -> accountService.createAccount(account));
 
         assertEquals("Account holder name is required", exception.getMessage());
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
@@ -100,9 +98,7 @@ public class AccountServiceTest {
         account.setAccountHolderName("");
         account.setAccountType("SAVINGS");
 
-        BankingException exception = assertThrows(BankingException.class, () -> {
-            accountService.createAccount(account);
-        });
+        BankingException exception = assertThrows(BankingException.class, () -> accountService.createAccount(account));
 
         assertEquals("Account holder name is required", exception.getMessage());
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
@@ -116,9 +112,7 @@ public class AccountServiceTest {
 
         when(customerRepository.existsByNameAndActiveTrue("John Doe")).thenReturn(true);
 
-        BankingException exception = assertThrows(BankingException.class, () -> {
-            accountService.createAccount(account);
-        });
+        BankingException exception = assertThrows(BankingException.class, () -> accountService.createAccount(account));
 
         assertEquals("Invalid account type. Must be SAVINGS or CHECKING", exception.getMessage());
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
@@ -132,9 +126,7 @@ public class AccountServiceTest {
 
         when(customerRepository.existsByNameAndActiveTrue("John Doe")).thenReturn(true);
 
-        BankingException exception = assertThrows(BankingException.class, () -> {
-            accountService.createAccount(account);
-        });
+        BankingException exception = assertThrows(BankingException.class, () -> accountService.createAccount(account));
 
         assertEquals("Invalid account type. Must be SAVINGS or CHECKING", exception.getMessage());
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
@@ -148,9 +140,7 @@ public class AccountServiceTest {
 
         when(customerRepository.existsByNameAndActiveTrue("nonexistent")).thenReturn(false);
 
-        BankingException exception = assertThrows(BankingException.class, () -> {
-            accountService.createAccount(account);
-        });
+        BankingException exception = assertThrows(BankingException.class, () -> accountService.createAccount(account));
 
         assertEquals("Customer with name nonexistent does not exist", exception.getMessage());
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
