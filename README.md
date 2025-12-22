@@ -6,7 +6,7 @@ This repository contains a REST API exposing basic CRUD operations for customers
 
 ## Overview
 
-- Language: Java 17
+- Language: Java 21
 - Frameworks: Spring Boot 3.4.1 (Web), Spring Data JPA, Lombok
 - Build tool / Package manager: Maven 3.9+ (with Maven Wrapper)
 - Entry point: `com.bankingsystem.BankingSystemApplication`
