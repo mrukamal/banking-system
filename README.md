@@ -86,7 +86,7 @@ Sample account response:
 
 ## Requirements
 
-- JDK 17
+- JDK 23
 - Maven 3.9+ (or use the provided Maven Wrapper `mvnw`/`mvnw.cmd`)
 - Docker and Docker Compose
 
