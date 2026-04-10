@@ -3,14 +3,15 @@ package com.bankingsystem.dto;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @Data
 public class AccountDTO {
     private Long id;
-    private String accountHolderName;
-    private String accountType; // e.g., SAVINGS, CHECKING
+    private Long customerId;
+    private AccountType accountType;
     private BigDecimal balance;
     private Boolean active;
-    private LocalDateTime createdAt;
-    private LocalDateTime lastModifiedAt;
+    private Date createdAt;
+    private Date lastModifiedAt;
 }

@@ -1,21 +1,22 @@
 package com.bankingsystem.service;
 
-import com.bankingsystem.entity.CustomerEntity;
-import com.bankingsystem.exception.BankingException;
 import com.bankingsystem.dto.AccountDTO;
 import com.bankingsystem.dto.CustomerDTO;
+import com.bankingsystem.entity.AccountEntity;
+import com.bankingsystem.entity.CustomerEntity;
+import com.bankingsystem.exception.BankingException;
 import com.bankingsystem.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
@@ -30,7 +31,12 @@ public class CustomerService {
         customer.setActive(entity.getActive());
         customer.setCreatedAt(entity.getCreatedAt());
         customer.setLastModifiedAt(entity.getLastModifiedAt());
-        // accounts list is not persisted here; leave default empty
+        if (entity.getAccounts() != null) {
+            customer.setAccounts(entity.getAccounts().stream()
+                    .map(accountService::toDto)
+                    .collect(Collectors.toList())
+            );
+        }
         return customer;
     }
 
@@ -42,55 +48,40 @@ public class CustomerService {
         if (customer.getActive() != null) {
             entity.setActive(customer.getActive());
         }
-        // Default active to true if it's a new entity or preserve it if we had it
+        if (customer.getAccounts() != null) {
+            entity.setAccounts(customer.getAccounts().stream()
+                    .map(accountService::toEntity)
+                    .peek(account -> account.setCustomer(entity))
+                    .collect(Collectors.toList()));
+        }
         return entity;
     }
 
     public List<CustomerDTO> getAllCustomers() {
-        // Map all active customers first
-        List<CustomerDTO> customers = customerRepository.findAll()
+        return customerRepository.findAll()
                 .stream()
                 .filter(CustomerEntity::getActive)
                 .map(this::toDto)
                 .collect(Collectors.toList());
-
-        // Load all active accounts and group by account holder name to attach to customers
-        List<AccountDTO> accounts = accountService.getAllAccounts(); // already filtered in accountService
-        Map<String, List<AccountDTO>> accountsByHolder = accounts.stream()
-                .collect(Collectors.groupingBy(AccountDTO::getAccountHolderName));
-
-        customers.forEach(c -> c.setAccounts(
-                new ArrayList<>(accountsByHolder.getOrDefault(c.getName(), new ArrayList<>()))
-        ));
-
-        return customers;
     }
 
     public CustomerDTO getCustomerById(Long id) {
         return customerRepository.findById(id)
                 .filter(CustomerEntity::getActive)
-                .map(entity -> {
-                    CustomerDTO customer = toDto(entity);
-                    // Attach associated active accounts by matching account holder name
-                    List<AccountDTO> accountsForCustomer = accountService.getAllAccounts() // already filtered in accountService
-                            .stream()
-                            .filter(a -> customer.getName() != null && customer.getName().equals(a.getAccountHolderName()))
-                            .collect(Collectors.toList());
-                    customer.setAccounts(accountsForCustomer);
-                    return customer;
-                })
+                .map(this::toDto)
                 .orElseThrow(() -> new BankingException("Customer with id " + id + " not found", HttpStatus.NOT_FOUND));
     }
 
+    @Transactional
     public CustomerDTO createCustomer(CustomerDTO customer) {
         // Basic request validation
         if (customer == null) {
-            throw new BankingException("Customer body is required", HttpStatus.BAD_REQUEST);
+            throw new BankingException("Request body is empty", HttpStatus.BAD_REQUEST);
         }
 
         String customerName = customer.getName();
         if (customerName == null || customerName.isBlank()) {
-            throw new BankingException("Customer.name must not be null or blank", HttpStatus.BAD_REQUEST);
+            throw new BankingException("Customer name must not be null or blank", HttpStatus.BAD_REQUEST);
         }
 
         if (customerRepository.existsByNameAndActiveTrue(customerName)) {
@@ -103,12 +94,8 @@ public class CustomerService {
                 if (account == null) {
                     throw new BankingException("Account entry must not be null when accounts are provided", HttpStatus.BAD_REQUEST);
                 }
-                String holder = account.getAccountHolderName();
-                if (holder == null || holder.isBlank()) {
-                    throw new BankingException("Account.accountHolderName must not be null or blank when accounts are provided", HttpStatus.BAD_REQUEST);
-                }
-                if (!customerName.equals(holder)) {
-                    throw new BankingException("Account.accountHolderName must match Customer.name", HttpStatus.BAD_REQUEST);
+                if (account.getAccountType() == null) {
+                    throw new BankingException("Account Type cannot be blank", HttpStatus.BAD_REQUEST);
                 }
             }
         }
@@ -117,19 +104,34 @@ public class CustomerService {
         return toDto(saved);
     }
 
+    @Transactional
     public CustomerDTO updateCustomer(Long id, CustomerDTO customer) {
-        if (!customerRepository.existsById(id)) {
-            throw new BankingException("Customer with id " + id + " not found", HttpStatus.NOT_FOUND);
+        CustomerEntity existing = customerRepository.findById(id)
+                .orElseThrow(() -> new BankingException("Customer with id " + id + " not found", HttpStatus.NOT_FOUND));
+        
+        existing.setName(customer.getName());
+        existing.setEmail(customer.getEmail());
+        if (customer.getActive() != null) {
+            existing.setActive(customer.getActive());
         }
-        customer.setId(id);
-        CustomerEntity updated = customerRepository.save(toEntity(customer));
+        
+        // Note: we don't update accounts here as it's a separate concern or handled via cascade if needed
+        // but the current implementation of updateCustomer in the original code replaced the entity.
+        
+        CustomerEntity updated = customerRepository.save(existing);
         return toDto(updated);
     }
 
+    @Transactional
     public void deleteCustomer(Long id) {
         CustomerEntity customer = customerRepository.findById(id)
                 .orElseThrow(() -> new BankingException("Customer with id " + id + " not found", HttpStatus.NOT_FOUND));
-        customer.setActive(false);
-        customerRepository.save(customer);
+        if(customer.getAccounts().isEmpty()
+        || customer.getAccounts().stream().noneMatch(AccountEntity::getActive)) {
+            customer.setActive(false);
+            customerRepository.save(customer);
+        } else {
+            throw new BankingException("Customer id " + id + " has existing accounts and cannot be inactivated", HttpStatus.CONFLICT);
+        }
     }
 }

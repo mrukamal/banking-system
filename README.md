@@ -6,8 +6,8 @@ This repository contains a REST API exposing basic CRUD operations for customers
 
 ## Overview
 
-- Language: Java 21
-- Frameworks: Spring Boot 3.4.1 (Web), Spring Data JPA, Lombok
+- Language: Java 17
+- Frameworks: Spring Boot 3.5.14-SNAPSHOT (Web), Spring Data JPA, Lombok
 - Build tool / Package manager: Maven 3.9+ (with Maven Wrapper)
 - Entry point: `com.bankingsystem.BankingSystemApplication`
 - Persistence: PostgreSQL (tables: `customers`, `accounts`)
@@ -41,7 +41,7 @@ Sample customer response:
   "accounts": [
     {
       "id": 1,
-      "accountHolderName": "John Doe",
+      "customerId": 1,
       "accountType": "SAVINGS",
       "balance": 1000.0,
       "active": true,
@@ -65,7 +65,7 @@ Sample customer response:
 Sample account request:
 ```json
 {
-  "accountHolderName": "John Doe",
+  "customerId": 1,
   "accountType": "SAVINGS",
   "balance": 1000.00
 }
@@ -75,7 +75,7 @@ Sample account response:
 ```json
 {
   "id": 1,
-  "accountHolderName": "John Doe",
+  "customerId": 1,
   "accountType": "SAVINGS",
   "balance": 1000.0,
   "active": true,
@@ -86,7 +86,7 @@ Sample account response:
 
 ## Requirements
 
-- JDK 23
+- JDK 17
 - Maven 3.9+ (or use the provided Maven Wrapper `mvnw`/`mvnw.cmd`)
 - Docker and Docker Compose
 
@@ -101,10 +101,17 @@ Important properties (local profile):
 
 ```yaml
 spring:
+  application:
+    name: banking-system
   datasource:
     url: jdbc:postgresql://localhost:5432/bankingsystem
-    username: banking_system
-    password: wgZ8W&t6
+    username: bankingsystem
+    password: bankingsystem
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
 server:
   port: 8089
 ```
@@ -141,10 +148,17 @@ The app will start on `http://localhost:8089` when using the `local` profile.
 ## Testing
 
 Run unit and integration tests:
-
 ```bash
 mvn test
 ```
+
+## Postman Collection
+
+A Postman collection with all available endpoints is available in the root of the project: [banking-system.postman_collection.json](./banking-system.postman_collection.json).
+
+To use it:
+1. Import the file into Postman.
+2. The collection uses a `baseUrl` variable, which defaults to `http://localhost:8089`.
 
 ## Project structure
 
@@ -169,4 +183,5 @@ mvn test
 
 ## Changelog
 
+- 2026-04-10: Updated README with correct Java version (17), updated API documentation to use customerId for accounts, and synchronized Postman collection. Corrected the local profile configuration section.
 - 2025-12-19: Updated README with PostgreSQL instructions, Adminer info, and detailed API specs.
