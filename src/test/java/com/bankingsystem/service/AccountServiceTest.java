@@ -1,5 +1,7 @@
 package com.bankingsystem.service;
 
+import com.bankingsystem.dto.AccountType;
+import com.bankingsystem.entity.AccountEntity;
 import com.bankingsystem.exception.BankingException;
 import com.bankingsystem.dto.AccountDTO;
 import com.bankingsystem.repository.AccountRepository;
@@ -37,38 +39,37 @@ public class AccountServiceTest {
     @Test
     void createAccount_WithValidData_ShouldReturnAccount() {
         AccountDTO account = new AccountDTO();
-        account.setAccountHolderName("John Doe");
-        account.setAccountType("SAVINGS");
+        account.setCustomerId(1L);
+        account.setAccountType(AccountType.SAVINGS);
         account.setBalance(BigDecimal.ZERO);
 
         com.bankingsystem.entity.AccountEntity entity = new com.bankingsystem.entity.AccountEntity();
         entity.setId(1L);
-        entity.setAccountHolderName("John Doe");
-        entity.setAccountType("SAVINGS");
+        entity.setAccountType(AccountType.SAVINGS);
         entity.setBalance(BigDecimal.ZERO);
 
-        when(customerRepository.existsByNameAndActiveTrue("John Doe")).thenReturn(true);
+        when(customerRepository.existsByIdAndActiveTrue(1L)).thenReturn(true);
+        when(customerRepository.findById(1L)).thenReturn(java.util.Optional.of(new com.bankingsystem.entity.CustomerEntity()));
         when(accountRepository.save(any(com.bankingsystem.entity.AccountEntity.class))).thenReturn(entity);
 
         AccountDTO result = accountService.createAccount(account);
 
         assertNotNull(result);
         assertEquals(1L, result.getId());
-        assertEquals("John Doe", result.getAccountHolderName());
-        assertEquals("SAVINGS", result.getAccountType());
+        assertEquals(AccountType.SAVINGS, result.getAccountType());
     }
 
     @Test
     void getAccountById_ShouldReturnAccountWithAuditFields() {
         Long id = 1L;
-        LocalDateTime now = LocalDateTime.now();
-        com.bankingsystem.entity.AccountEntity entity = new com.bankingsystem.entity.AccountEntity();
+        java.util.Date now = new java.util.Date();
+        AccountEntity entity = new AccountEntity();
         entity.setId(id);
-        entity.setAccountHolderName("John Doe");
-        entity.setAccountType("SAVINGS");
+        entity.setAccountType(AccountType.SAVINGS);
         entity.setBalance(BigDecimal.ZERO);
         entity.setCreatedAt(now);
         entity.setLastModifiedAt(now);
+        entity.setActive(true);
 
         when(accountRepository.findById(id)).thenReturn(java.util.Optional.of(entity));
 
@@ -81,69 +82,27 @@ public class AccountServiceTest {
     }
 
     @Test
-    void createAccount_WithNullHolderName_ShouldThrowException() {
+    void createAccount_WithNullCustomerId_ShouldThrowException() {
         AccountDTO account = new AccountDTO();
-        account.setAccountHolderName(null);
-        account.setAccountType("SAVINGS");
+        account.setCustomerId(null);
+        account.setAccountType(AccountType.SAVINGS);
 
         BankingException exception = assertThrows(BankingException.class, () -> accountService.createAccount(account));
 
-        assertEquals("Account holder name is required", exception.getMessage());
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
-    }
-
-    @Test
-    void createAccount_WithEmptyHolderName_ShouldThrowException() {
-        AccountDTO account = new AccountDTO();
-        account.setAccountHolderName("");
-        account.setAccountType("SAVINGS");
-
-        BankingException exception = assertThrows(BankingException.class, () -> accountService.createAccount(account));
-
-        assertEquals("Account holder name is required", exception.getMessage());
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
-    }
-
-    @Test
-    void createAccount_WithInvalidAccountType_ShouldThrowException() {
-        AccountDTO account = new AccountDTO();
-        account.setAccountHolderName("John Doe");
-        account.setAccountType("INVALID");
-
-        when(customerRepository.existsByNameAndActiveTrue("John Doe")).thenReturn(true);
-
-        BankingException exception = assertThrows(BankingException.class, () -> accountService.createAccount(account));
-
-        assertEquals("Invalid account type. Must be SAVINGS or CHECKING", exception.getMessage());
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
-    }
-
-    @Test
-    void createAccount_WithNullAccountType_ShouldThrowException() {
-        AccountDTO account = new AccountDTO();
-        account.setAccountHolderName("John Doe");
-        account.setAccountType(null);
-
-        when(customerRepository.existsByNameAndActiveTrue("John Doe")).thenReturn(true);
-
-        BankingException exception = assertThrows(BankingException.class, () -> accountService.createAccount(account));
-
-        assertEquals("Invalid account type. Must be SAVINGS or CHECKING", exception.getMessage());
+        assertEquals("Customer ID is required", exception.getMessage());
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
     }
 
     @Test
     void createAccount_WithNonExistentCustomer_ShouldThrowException() {
         AccountDTO account = new AccountDTO();
-        account.setAccountHolderName("nonexistent");
-        account.setAccountType("SAVINGS");
-
-        when(customerRepository.existsByNameAndActiveTrue("nonexistent")).thenReturn(false);
+        account.setCustomerId(999L);
+        account.setAccountType(AccountType.SAVINGS);
 
         BankingException exception = assertThrows(BankingException.class, () -> accountService.createAccount(account));
 
-        assertEquals("Customer with name nonexistent does not exist", exception.getMessage());
-        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals("Customer with id 999 does not exist", exception.getMessage());
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
     }
 
     @Test
@@ -162,22 +121,48 @@ public class AccountServiceTest {
     }
 
     @Test
+    void updateAccount_ShouldRetainCreatedAt() {
+        Long id = 1L;
+        java.util.Date createdAt = new java.util.Date();
+        com.bankingsystem.entity.AccountEntity existingEntity = new com.bankingsystem.entity.AccountEntity();
+        existingEntity.setId(id);
+        existingEntity.setAccountType(AccountType.SAVINGS);
+        existingEntity.setBalance(BigDecimal.ZERO);
+        existingEntity.setCreatedAt(createdAt);
+
+        AccountDTO updateDto = new AccountDTO();
+        updateDto.setCustomerId(1L);
+        updateDto.setAccountType(AccountType.SAVINGS);
+        updateDto.setBalance(BigDecimal.TEN);
+
+        when(accountRepository.findById(id)).thenReturn(java.util.Optional.of(existingEntity));
+        when(customerRepository.existsByIdAndActiveTrue(1L)).thenReturn(true);
+        when(customerRepository.findById(1L)).thenReturn(java.util.Optional.of(new com.bankingsystem.entity.CustomerEntity()));
+        when(accountRepository.save(any(com.bankingsystem.entity.AccountEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AccountDTO result = accountService.updateAccount(id, updateDto);
+
+        assertNotNull(result);
+        assertEquals(createdAt, result.getCreatedAt(), "CreatedAt should be retained");
+    }
+
+    @Test
     void updateAccount_ShouldAllowReactivatingAccount() {
         Long id = 1L;
         com.bankingsystem.entity.AccountEntity existingEntity = new com.bankingsystem.entity.AccountEntity();
         existingEntity.setId(id);
-        existingEntity.setAccountHolderName("John Doe");
-        existingEntity.setAccountType("SAVINGS");
+        existingEntity.setAccountType(AccountType.SAVINGS);
         existingEntity.setBalance(BigDecimal.ZERO);
         existingEntity.setActive(false);
 
         AccountDTO updateDto = new AccountDTO();
-        updateDto.setAccountHolderName("John Doe");
-        updateDto.setAccountType("SAVINGS");
+        updateDto.setCustomerId(1L);
+        updateDto.setAccountType(AccountType.SAVINGS);
         updateDto.setActive(true);
 
-        when(accountRepository.existsById(id)).thenReturn(true);
-        when(customerRepository.existsByNameAndActiveTrue("John Doe")).thenReturn(true);
+        when(accountRepository.findById(id)).thenReturn(java.util.Optional.of(existingEntity));
+        when(customerRepository.existsByIdAndActiveTrue(1L)).thenReturn(true);
+        when(customerRepository.findById(1L)).thenReturn(java.util.Optional.of(new com.bankingsystem.entity.CustomerEntity()));
         when(accountRepository.save(any(com.bankingsystem.entity.AccountEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         AccountDTO result = accountService.updateAccount(id, updateDto);
