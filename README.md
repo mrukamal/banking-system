@@ -183,5 +183,6 @@ To use it:
 
 ## Changelog
 
+- 2026-04-16: Added a "Contributors" section with contribution guidelines (branching and GIT conventional commits). Provided a comprehensive analysis for upgrading the project to JDK 21/23.
 - 2026-04-10: Updated README with correct Java version (17), updated API documentation to use customerId for accounts, and synchronized Postman collection. Corrected the local profile configuration section.
 - 2025-12-19: Updated README with PostgreSQL instructions, Adminer info, and detailed API specs.
