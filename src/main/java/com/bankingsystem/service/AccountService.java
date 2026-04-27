@@ -6,6 +6,9 @@ import com.bankingsystem.dto.AccountDTO;
 import com.bankingsystem.repository.AccountRepository;
 import com.bankingsystem.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,8 +48,10 @@ public class AccountService {
         return entity;
     }
 
-    public List<AccountDTO> getAllAccounts() {
-        return accountRepository.findAll()
+    public List<AccountDTO> getAllAccounts(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("customer.name").ascending());
+
+        return accountRepository.findBy(pageable)
                 .stream()
                 .filter(AccountEntity::getActive)
                 .map(this::toDto)

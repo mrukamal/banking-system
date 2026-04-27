@@ -16,8 +16,8 @@ public class AccountController {
     private final AccountService accountService;
 
     @GetMapping
-    public List<AccountDTO> getAllAccounts() {
-        return accountService.getAllAccounts();
+    public List<AccountDTO> getAllAccounts(@RequestParam Integer page, @RequestParam Integer size) {
+        return accountService.getAllAccounts(page, size);
     }
 
     @GetMapping("/{id}")

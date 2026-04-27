@@ -17,7 +17,7 @@ This repository contains a REST API exposing basic CRUD operations for customers
 
 #### Customers API
 
-- `GET /api/customers` — list all active customers (with their accounts)
+- `GET /api/customers?page={page}&size={size}` — list all active customers (with their accounts) - supports pagination (e.g., `?page=0&size=10`)
 - `GET /api/customers/{id}` — get customer by id (with their accounts)
 - `POST /api/customers` — create customer
 - `PUT /api/customers/{id}` — update customer by id
@@ -56,7 +56,7 @@ Sample customer response:
 
 #### Accounts API
 
-- `GET /api/accounts` — list all active accounts
+- `GET /api/accounts?page={page}&size={size}` — list all active accounts - supports pagination (e.g., `?page=0&size=10`)
 - `GET /api/accounts/{id}` — get account by id
 - `POST /api/accounts` — create account
 - `PUT /api/accounts/{id}` — update account by id
@@ -183,6 +183,7 @@ To use it:
 
 ## Changelog
 
+- 2026-04-27: Updated `getAllCustomers` and `getAllAccounts` endpoints to support pagination with `page` and `size` parameters. Updated README and Postman collection.
 - 2026-04-16: Added a "Contributors" section with contribution guidelines (branching and GIT conventional commits). Provided a comprehensive analysis for upgrading the project to JDK 21/23.
 - 2026-04-10: Updated README with correct Java version (17), updated API documentation to use customerId for accounts, and synchronized Postman collection. Corrected the local profile configuration section.
 - 2025-12-19: Updated README with PostgreSQL instructions, Adminer info, and detailed API specs.
