@@ -7,6 +7,9 @@ import com.bankingsystem.entity.CustomerEntity;
 import com.bankingsystem.exception.BankingException;
 import com.bankingsystem.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,8 +60,10 @@ public class CustomerService {
         return entity;
     }
 
-    public List<CustomerDTO> getAllCustomers() {
-        return customerRepository.findAll()
+    public List<CustomerDTO> getAllCustomers(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
+
+        return customerRepository.findBy(pageable)
                 .stream()
                 .filter(CustomerEntity::getActive)
                 .map(this::toDto)

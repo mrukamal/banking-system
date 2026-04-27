@@ -16,8 +16,8 @@ public class CustomerController {
     private final CustomerService customerService;
 
     @GetMapping
-    public List<CustomerDTO> getAllCustomers() {
-        return customerService.getAllCustomers();
+    public List<CustomerDTO> getAllCustomers(@RequestParam Integer page, @RequestParam Integer size) {
+        return customerService.getAllCustomers(page, size);
     }
 
     @GetMapping("/{id}")

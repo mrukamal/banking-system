@@ -11,10 +11,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -169,5 +175,23 @@ public class AccountServiceTest {
 
         assertNotNull(result);
         assertEquals(true, result.getActive());
+    }
+
+    @Test
+    void getAllAccounts_ShouldReturnPaginatedResults() {
+        int page = 0;
+        int size = 10;
+        AccountEntity entity = new AccountEntity();
+        entity.setId(1L);
+        entity.setActive(true);
+        Slice<AccountEntity> accountSlice = new SliceImpl<>(Collections.singletonList(entity));
+
+        when(accountRepository.findBy(any(Pageable.class))).thenReturn(accountSlice);
+
+        List<AccountDTO> result = accountService.getAllAccounts(page, size);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        verify(accountRepository).findBy(any(Pageable.class));
     }
 }

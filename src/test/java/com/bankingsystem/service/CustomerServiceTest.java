@@ -22,6 +22,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 
 import java.util.*;
@@ -70,6 +74,8 @@ public class CustomerServiceTest {
     @Test
     public void testGetAllCustomers_returnsActiveCustomersWithAccounts() {
         // Arrange
+        int page = 0;
+        int size = 10;
         CustomerEntity activeCustomer = createCustomerEntity(1L, "John Doe", "john@example.com", true);
         com.bankingsystem.entity.AccountEntity accountEntity = new com.bankingsystem.entity.AccountEntity();
         accountEntity.setId(10L);
@@ -77,19 +83,19 @@ public class CustomerServiceTest {
         accountEntity.setCustomer(activeCustomer);
         activeCustomer.setAccounts(java.util.Collections.singletonList(accountEntity));
 
-        CustomerEntity inactiveCustomer = createCustomerEntity(2L, "Jane Doe", "jane@example.com", false);
+        Slice<CustomerEntity> customerSlice = new SliceImpl<>(Collections.singletonList(activeCustomer));
 
-        when(customerRepository.findAll()).thenReturn(Arrays.asList(activeCustomer, inactiveCustomer));
+        when(customerRepository.findBy(any(Pageable.class))).thenReturn(customerSlice);
 
         // Act
-        List<CustomerDTO> result = customerService.getAllCustomers();
+        List<CustomerDTO> result = customerService.getAllCustomers(page, size);
 
         // Assert
         assertEquals(1, result.size());
         CustomerDTO customer = result.get(0);
         assertEquals("John Doe", customer.getName());
         assertEquals(1, customer.getAccounts().size());
-        verify(customerRepository).findAll();
+        verify(customerRepository).findBy(any(Pageable.class));
     }
 
     @Test
@@ -218,7 +224,7 @@ public class CustomerServiceTest {
         // Arrange
         Long id = 999L;
         CustomerDTO dto = createCustomerDTO(id, "Ghost", "ghost@example.com", true);
-        when(customerRepository.existsById(id)).thenReturn(false);
+        when(customerRepository.findById(id)).thenReturn(Optional.empty());
 
         // Act & Assert
         BankingException ex = assertThrows(BankingException.class, () -> customerService.updateCustomer(id, dto));
